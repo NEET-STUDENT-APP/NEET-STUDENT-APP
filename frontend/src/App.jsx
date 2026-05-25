@@ -231,7 +231,7 @@ function AuthPortal({
   const [staffMobile, setStaffMobile] = useState('');
   
   // Unique dropdowns for staff
-  const [dropdowns, setDropdowns] = useState({ categories: [], sections: [], campuses: [] });
+  const [dropdowns, setDropdowns] = useState({ categories: [], sections: [], campuses: [], categorySections: {} });
 
   // Custom handler for SCS ID digits input (numeric-only, max 8 digits)
   const handleScsDigitsChange = (val) => {
@@ -259,8 +259,10 @@ function AuthPortal({
         .then(res => res.json())
         .then(data => {
           setDropdowns(data);
-          if (data.categories.length) setStaffCategory(data.categories[0]);
-          if (data.sections.length) setStaffSection(data.sections[0]);
+          const firstCat = data.categories?.[0] || '';
+          setStaffCategory(firstCat);
+          const sectionsForCat = data.categorySections?.[firstCat] || [];
+          setStaffSection(sectionsForCat[0] || '');
           // Multi campus: start with nothing selected
           setStaffCampuses([]);
         })
@@ -701,7 +703,16 @@ function AuthPortal({
 
             <div className="form-group">
               <label>Select Category (Class)</label>
-              <select className="form-control" value={staffCategory} onChange={e => setStaffCategory(e.target.value)}>
+              <select 
+                className="form-control" 
+                value={staffCategory} 
+                onChange={e => {
+                  const newCat = e.target.value;
+                  setStaffCategory(newCat);
+                  const sectionsForCat = dropdowns.categorySections?.[newCat] || [];
+                  setStaffSection(sectionsForCat[0] || '');
+                }}
+              >
                 {dropdowns.categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -709,7 +720,7 @@ function AuthPortal({
             <div className="form-group">
               <label>Select Section</label>
               <select className="form-control" value={staffSection} onChange={e => setStaffSection(e.target.value)}>
-                {dropdowns.sections.map(s => <option key={s} value={s}>{s}</option>)}
+                {(dropdowns.categorySections?.[staffCategory] || []).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 

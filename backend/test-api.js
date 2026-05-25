@@ -99,7 +99,7 @@ async function runTests() {
       dean: 'Anand Sir',
       category: '11th Class',
       section: 'AMS60 - 11A',
-      campus: 'ECITY_NEET_BOYS',
+      campuses: ['ECITY_NEET_BOYS'],
       mobile: '8877665544',
       password: 'staffpassword'
     });
@@ -169,6 +169,8 @@ async function runTests() {
     console.log('Student Login Status:', studentLogin.statusCode);
     if (studentLogin.statusCode !== 200) throw new Error('Student Login failed');
     studentToken = studentLogin.data.token;
+
+    console.log('Student Profile:', studentLogin.data.profile);
 
     // 10. Student submit exam submission with mock answers
     console.log('\n10. Submitting mock exam responses (180 questions)...');

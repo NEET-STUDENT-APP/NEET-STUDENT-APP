@@ -3,12 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const xlsx = require('xlsx');
 const path = require('path');
-
 // Cache student data in memory for fast lookup
 let studentLookupMap = {};
 let uniqueCategories = [];
 let uniqueSections = [];
 let uniqueCampuses = [];
+let categorySections = {};
 
 // Campuses that are NOT part of this NEET app — excluded from all dropdowns and lookups
 const EXCLUDED_CAMPUSES = ['ECITY_SCHOOL', 'ECITY_ENGG_GIRLS_RESIDENTIAL'];
@@ -25,27 +25,44 @@ function loadStudentExcelData() {
     const catSet = new Set();
     const secSet = new Set();
     const camSet = new Set();
+    const catSecMap = {};
     
     data.forEach(row => {
       const scs = row['SCS Number'];
       const campus = (row['Campus'] || '').trim();
+      const category = (row['Category'] || '').trim();
+      const section = (row['Section'] || '').trim();
 
       // Skip students belonging to excluded campuses
       if (!scs || EXCLUDED_CAMPUSES.includes(campus)) return;
 
       studentLookupMap[scs.trim().toUpperCase()] = {
         name: row['Student Name'] || '',
-        category: row['Category'] || '',
-        section: row['Section'] || '',
+        category,
+        section,
         campus
       };
-      if (row['Category']) catSet.add(row['Category']);
-      if (row['Section']) secSet.add(row['Section']);
+      if (category) {
+        catSet.add(category);
+        if (section) {
+          if (!catSecMap[category]) {
+            catSecMap[category] = new Set();
+          }
+          catSecMap[category].add(section);
+        }
+      }
+      if (section) secSet.add(section);
       camSet.add(campus);
     });
     
     uniqueCategories = Array.from(catSet).sort();
     uniqueSections = Array.from(secSet).sort();
+    
+    categorySections = {};
+    for (const cat in catSecMap) {
+      categorySections[cat] = Array.from(catSecMap[cat]).sort();
+    }
+
     // Filter out excluded campuses from the dropdown list
     uniqueCampuses = Array.from(camSet)
       .filter(c => !EXCLUDED_CAMPUSES.includes(c))
@@ -55,9 +72,7 @@ function loadStudentExcelData() {
   } catch (error) {
     console.error('Error loading student excel file:', error.message);
   }
-}
-
-// Load data immediately
+}// Load data immediately
 loadStudentExcelData();
 
 // Student lookup by SCS ID
@@ -84,7 +99,8 @@ exports.getDropdownData = async (req, res) => {
     res.json({
       categories: uniqueCategories,
       sections: uniqueSections,
-      campuses: uniqueCampuses
+      campuses: uniqueCampuses,
+      categorySections: categorySections
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching dropdown data.', error: error.message });
@@ -101,8 +117,6 @@ exports.studentRegister = async (req, res) => {
     }
 
     const cleanScs = scsNumber.trim().toUpperCase();
-    
-    // 1. Verify SCS prefix and digit length (SCS followed by 7 or 8 digits)
     const scsRegex = /^SCS\d{7,8}$/;
     if (!scsRegex.test(cleanScs)) {
       return res.status(400).json({ message: 'SCS Number must start with "SCS" and be followed by 7 or 8 digits.' });
