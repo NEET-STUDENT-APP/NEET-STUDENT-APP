@@ -4,7 +4,7 @@ import {
   AlertCircle, Download, LogOut, RefreshCw, Play, Send, FileText, ChevronRight, Check, ShieldAlert, Calendar,
   Info, AlertTriangle
 } from 'lucide-react';
-import { generateStudentPDFReport } from './utils/pdfGenerator';
+import { generateStudentPDFReport, generateStudentDetailedRevisionPDF } from './utils/pdfGenerator';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'http://localhost:5050' : '');
@@ -1151,6 +1151,34 @@ function StudentDashboard({ token, profile, showToast }) {
   const [reattemptOption, setReattemptOption] = useState(null);
   const [reattemptResult, setReattemptResult] = useState(null);
 
+  // Detailed PDF Generation States
+  const [isGeneratingDetailedPDF, setIsGeneratingDetailedPDF] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState('');
+
+  const handleDownloadDetailedRevisionPDF = async () => {
+    if (!selectedReport) return;
+    setIsGeneratingDetailedPDF(true);
+    setPdfProgress('0%');
+    try {
+      await generateStudentDetailedRevisionPDF(
+        selectedReport,
+        token,
+        API_BASE,
+        (current, total) => {
+          const percent = Math.round((current / total) * 100);
+          setPdfProgress(`${percent}% (${current}/${total})`);
+        }
+      );
+      showToast('Revision booklet downloaded successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to generate revision booklet PDF.', 'error');
+    } finally {
+      setIsGeneratingDetailedPDF(false);
+      setPdfProgress('');
+    }
+  };
+
   const fetchExamsAndReports = async () => {
     try {
       // 1. Fetch exams
@@ -1820,9 +1848,20 @@ function StudentDashboard({ token, profile, showToast }) {
                   <span>Total Time Spent: <strong>{Math.floor(selectedReport.submission.time_spent / 60)}m {selectedReport.submission.time_spent % 60}s</strong></span>
                 </div>
               </div>
-              <button className="btn btn-success" onClick={() => generateStudentPDFReport(selectedReport)}>
-                <Download size={16} /> Download PDF Report Card
-              </button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button className="btn btn-success" onClick={() => generateStudentPDFReport(selectedReport)} disabled={isGeneratingDetailedPDF}>
+                  <Download size={16} /> Download PDF Report Card
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleDownloadDetailedRevisionPDF}
+                  disabled={isGeneratingDetailedPDF}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Download size={16} /> 
+                  {isGeneratingDetailedPDF ? `Generating Revision PDF... (${pdfProgress})` : 'Download Revision Booklet (180 Qs with Images)'}
+                </button>
+              </div>
             </div>
 
             <div className="stats-grid">
