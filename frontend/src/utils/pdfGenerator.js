@@ -236,14 +236,10 @@ export async function generateStudentPDFReport(reportData) {
   doc.save(filename);
 }
 
-// Helper to fetch question images with Auth token header
-async function getBase64ImageFromUrlWithAuth(imageUrl, token) {
+// Helper to fetch question images using simple GET request (no headers to avoid preflight CORS blocks)
+async function getBase64ImageFromUrlWithAuth(imageUrl) {
   try {
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch(imageUrl, { headers });
+    const res = await fetch(imageUrl);
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
@@ -424,16 +420,13 @@ export async function generateStudentDetailedRevisionPDF(reportData, token, apiB
   
   if (onProgress) onProgress(0, totalQuestions);
   
-  // Process questions in batches of 10 for concurrent loading
   const batchSize = 10;
   for (let b = 0; b < totalQuestions; b += batchSize) {
     const batch = questionsList.slice(b, b + batchSize);
-    
-    // Concurrent fetch images and details
     const loadedBatchData = await Promise.all(batch.map(async (qNoStr) => {
       const ans = submission.answers[qNoStr];
       const imageUrl = ans.image_url || `${apiBase}/api/exams/${submission.exam_id}/questions/${qNoStr}/image?token=${token}`;
-      const imgBase64 = await getBase64ImageFromUrlWithAuth(imageUrl, token);
+      let imgBase64 = await getBase64ImageFromUrlWithAuth(imageUrl);
       
       let imgW = 0;
       let imgH = 0;
@@ -457,7 +450,6 @@ export async function generateStudentDetailedRevisionPDF(reportData, token, apiB
       return { qNoStr, ans, imgBase64, imgW, imgH };
     }));
     
-    // Render the fetched questions sequentially in the PDF
     for (let idx = 0; idx < loadedBatchData.length; idx++) {
       const { qNoStr, ans, imgBase64, imgW, imgH } = loadedBatchData[idx];
       const reattempt = reattempts ? reattempts.find(r => r.q_no.toString() === qNoStr) : null;
@@ -595,7 +587,6 @@ export async function generateStudentDetailedRevisionPDF(reportData, token, apiB
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    
     if (i > 1) {
       // Page Header
       doc.setFontSize(8);
@@ -614,10 +605,9 @@ export async function generateStudentDetailedRevisionPDF(reportData, token, apiB
     doc.setTextColor(140, 140, 140);
     doc.setFont('Helvetica', 'normal');
     doc.text('Sri Chaitanya Educational Institutions  ·  NEET Student Prep App', 14, 290);
-    doc.text(`SCS: ${submission.scs_number} - ${submission.student_name}`, 145, 290);
+    doc.text(`${submission.scs_number} - ${submission.student_name}`, 145, 290);
   }
-  
+
   const filename = `${submission.scs_number}_Revision_Booklet_${submission.exam_name.replace(/\s+/g, '_')}.pdf`;
   doc.save(filename);
 }
-
