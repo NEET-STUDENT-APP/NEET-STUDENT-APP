@@ -61,11 +61,20 @@ echo.
 :: Step 3: Prompt for Render URL
 echo [STEP 3] Configuring Frontend with Render Backend URL
 echo ----------------------------------------------------------
-:prompt_url
-set /p RENDER_URL="Paste your Render Web Service URL: "
-if "%RENDER_URL%"=="" (
-    echo URL cannot be empty. Please paste your Render URL.
-    goto prompt_url
+set "RENDER_URL="
+if exist frontend\.env.production (
+    for /f "tokens=2 delims==" %%i in ('findstr "VITE_API_BASE" frontend\.env.production') do set "RENDER_URL=%%i"
+)
+
+if not "%RENDER_URL%"=="" (
+    echo Using existing saved Render URL: %RENDER_URL%
+) else (
+    :prompt_url
+    set /p RENDER_URL="Paste your Render Web Service URL: "
+    if "%RENDER_URL%"=="" (
+        echo URL cannot be empty. Please paste your Render URL.
+        goto prompt_url
+    )
 )
 :: Remove trailing slash if present
 if "%RENDER_URL:~-1%"=="/" set "RENDER_URL=%RENDER_URL:~0,-1%"
