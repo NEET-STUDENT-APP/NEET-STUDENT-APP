@@ -63,10 +63,14 @@ export async function generateStudentPDFReport(reportData) {
   doc.setFont('Helvetica', 'bold');
   doc.text('STUDENT INFORMATION', 14, 48);
 
+  const totalMins = Math.floor(submission.time_spent / 60);
+  const totalSecs = submission.time_spent % 60;
+  const totalTimeSpentText = `${totalMins}m ${totalSecs}s`;
+
   const studentInfoData = [
     ['Student Name:', submission.student_name, 'SCS Number:', submission.scs_number],
     ['Category / Class:', submission.category, 'Section Name:', submission.section],
-    ['Campus Name:', submission.campus, '', '']
+    ['Campus Name:', submission.campus, 'Total Time Spent:', totalTimeSpentText]
   ];
 
   doc.autoTable({

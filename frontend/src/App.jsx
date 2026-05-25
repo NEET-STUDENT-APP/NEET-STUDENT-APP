@@ -1233,13 +1233,14 @@ function StudentDashboard({ token, profile }) {
   const handleGoToQuestion = (idx) => {
     // 1. Record current question time spent
     const currentQNo = questions[currentIdx].q_no;
+    const currentFocusTime = questionFocusTimeRef.current;
     setAnswers(prev => {
       const currentAnsObj = prev[currentQNo] || { selected: null, time_spent_sec: 0 };
       return {
         ...prev,
         [currentQNo]: {
           ...currentAnsObj,
-          time_spent_sec: currentAnsObj.time_spent_sec + questionFocusTimeRef.current
+          time_spent_sec: currentAnsObj.time_spent_sec + currentFocusTime
         }
       };
     });
@@ -1262,16 +1263,19 @@ function StudentDashboard({ token, profile }) {
       return;
     }
 
+    const currentFocusTime = questionFocusTimeRef.current;
+
     setAnswers(prev => ({
       ...prev,
       [qNo]: {
         selected: optionVal,
-        time_spent_sec: (prev[qNo]?.time_spent_sec || 0) + questionFocusTimeRef.current
+        time_spent_sec: (prev[qNo]?.time_spent_sec || 0) + currentFocusTime
       }
     }));
 
     // Reset question focus timer
     questionFocusTimeRef.current = 0;
+    setCurrentQSecs(0);
 
     // Auto navigate to next question if available after a brief visual confirmation delay
     if (currentIdx < questions.length - 1) {
@@ -1290,15 +1294,18 @@ function StudentDashboard({ token, profile }) {
       return;
     }
 
+    const currentFocusTime = questionFocusTimeRef.current;
+
     setAnswers(prev => ({
       ...prev,
       [qNo]: {
         selected: null,
-        time_spent_sec: (prev[qNo]?.time_spent_sec || 0) + questionFocusTimeRef.current
+        time_spent_sec: (prev[qNo]?.time_spent_sec || 0) + currentFocusTime
       }
     }));
 
     questionFocusTimeRef.current = 0;
+    setCurrentQSecs(0);
 
     // Auto navigate to next question if available
     if (currentIdx < questions.length - 1) {
@@ -1730,6 +1737,7 @@ function StudentDashboard({ token, profile }) {
                     <th>Exam Name</th>
                     <th>Date Attempted</th>
                     <th>Score (out of 720)</th>
+                    <th>Time Spent</th>
                     <th>Accuracy Breakdown</th>
                     <th>Action</th>
                   </tr>
@@ -1744,6 +1752,7 @@ function StudentDashboard({ token, profile }) {
                           {rep.score} / 720
                         </strong>
                       </td>
+                      <td>{Math.floor(rep.time_spent / 60)}m {rep.time_spent % 60}s</td>
                       <td>
                         <span style={{ color: 'var(--success)' }}>{rep.correct_count} Correct</span> |{' '}
                         <span style={{ color: 'var(--danger)' }}>{rep.wrong_count} Wrong</span> |{' '}
@@ -1773,6 +1782,11 @@ function StudentDashboard({ token, profile }) {
                   ← Back to List
                 </button>
                 <h2>Performance Report: {selectedReport.submission.exam_name}</h2>
+                <div style={{ display: 'flex', gap: '15px', color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
+                  <span>Attempted: <strong>{new Date(selectedReport.submission.submitted_at).toLocaleString()}</strong></span>
+                  <span>•</span>
+                  <span>Total Time Spent: <strong>{Math.floor(selectedReport.submission.time_spent / 60)}m {selectedReport.submission.time_spent % 60}s</strong></span>
+                </div>
               </div>
               <button className="btn btn-success" onClick={() => generateStudentPDFReport(selectedReport)}>
                 <Download size={16} /> Download PDF Report Card
