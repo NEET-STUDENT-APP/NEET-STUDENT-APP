@@ -19,6 +19,16 @@ async function getBase64ImageFromUrl(imageUrl) {
   }
 }
 
+function formatDate(dateInput) {
+  if (!dateInput) return '-';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '-';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export async function generateStudentPDFReport(reportData) {
   const { submission, staff } = reportData;
   const doc = new jsPDF();
@@ -53,9 +63,8 @@ export async function generateStudentPDFReport(reportData) {
   doc.setFontSize(12);
   doc.text('NEET Student Prep App - Official Exam Report Card', 45, 25);
   
-  const dateStr = new Date(submission.submitted_at).toLocaleDateString();
   doc.setFontSize(10);
-  doc.text(`Report Generated: ${new Date().toLocaleDateString()} | Exam Date: ${new Date(submission.exam_date).toLocaleDateString()}`, 45, 32);
+  doc.text(`Report Generated: ${formatDate(new Date())} | Exam Date: ${formatDate(submission.exam_date)}`, 45, 32);
 
   // 2. Student Information Table
   doc.setFontSize(12);

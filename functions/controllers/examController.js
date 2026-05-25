@@ -378,7 +378,7 @@ exports.getReport = async (req, res) => {
 
     // Check for reattempts already completed for this submission
     const [reattempts] = await db.query(
-      `SELECT q_no, reason, selected_key, is_correct, reattempted_at FROM reattempts WHERE submission_id = ?`,
+      `SELECT q_no, reason, selected_key, is_correct, reattempted_at FROM reattempts WHERE submission_id = ? ORDER BY id DESC`,
       [submissionId]
     );
 

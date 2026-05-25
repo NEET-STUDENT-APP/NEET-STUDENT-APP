@@ -47,6 +47,31 @@ const validateReason = (text) => {
   return { isValid: true };
 };
 
+const formatDate = (dateInput) => {
+  if (!dateInput) return '-';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '-';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatDateTime = (dateInput) => {
+  if (!dateInput) return '-';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '-';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  return `${day}/${month}/${year}, ${hours}:${minutes} ${ampm}`;
+};
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [role, setRole] = useState(localStorage.getItem('role') || '');
@@ -153,7 +178,7 @@ function App() {
   
         <main className="container" style={{ flex: 1 }}>
           {role === 'hod' && <HodDashboard token={token} />}
-          {role === 'student' && <StudentDashboard token={token} profile={userProfile} />}
+          {role === 'student' && <StudentDashboard token={token} profile={userProfile} showToast={showToast} />}
           {role === 'staff' && <StaffDashboard token={token} profile={userProfile} />}
         </main>
       </div>
@@ -1040,7 +1065,7 @@ function HodDashboard({ token }) {
                     <tr key={exam.id}>
                       <td><strong>{exam.name}</strong></td>
                       <td><span className="badge" style={{ background: 'var(--primary-glow)', color: '#93c5fd' }}>{exam.test_type}</span></td>
-                      <td>{exam.exam_date ? new Date(exam.exam_date).toLocaleDateString() : 'N/A'}</td>
+                      <td>{exam.exam_date ? formatDate(exam.exam_date) : 'N/A'}</td>
                       <td>
                         {exam.is_released ? (
                           <span className="badge badge-approved"><Check size={12} /> Released</span>
@@ -1094,7 +1119,7 @@ function HodDashboard({ token }) {
 /* ==========================================================================
    STUDENT DASHBOARD & TEST ENVIRONMENT
    ========================================================================== */
-function StudentDashboard({ token, profile }) {
+function StudentDashboard({ token, profile, showToast }) {
   const [subTab, setSubTab] = useState('tests'); // tests | reports
   const [exams, setExams] = useState([]);
   const [reports, setReports] = useState([]);
@@ -1711,7 +1736,7 @@ function StudentDashboard({ token, profile }) {
                         <span className="meta-item"><BookOpen size={14} /> 180 Questions</span>
                         {exam.exam_date && (
                           <span className="meta-item" style={{ color: 'var(--primary)', fontWeight: '700' }}>
-                            <Calendar size={14} /> Date: {new Date(exam.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            <Calendar size={14} /> Date: {formatDate(exam.exam_date)}
                           </span>
                         )}
                       </div>
@@ -1753,7 +1778,7 @@ function StudentDashboard({ token, profile }) {
                   {reports.map(rep => (
                     <tr key={rep.id}>
                       <td><strong>{rep.exam_name}</strong></td>
-                      <td>{new Date(rep.submitted_at).toLocaleString()}</td>
+                      <td>{formatDateTime(rep.submitted_at)}</td>
                       <td>
                         <strong style={{ color: rep.score >= 360 ? 'var(--success)' : 'var(--danger)' }}>
                           {rep.score} / 720
@@ -1790,7 +1815,7 @@ function StudentDashboard({ token, profile }) {
                 </button>
                 <h2>Performance Report: {selectedReport.submission.exam_name}</h2>
                 <div style={{ display: 'flex', gap: '15px', color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
-                  <span>Attempted: <strong>{new Date(selectedReport.submission.submitted_at).toLocaleString()}</strong></span>
+                  <span>Attempted: <strong>{formatDateTime(selectedReport.submission.submitted_at)}</strong></span>
                   <span>•</span>
                   <span>Total Time Spent: <strong>{Math.floor(selectedReport.submission.time_spent / 60)}m {selectedReport.submission.time_spent % 60}s</strong></span>
                 </div>
@@ -1847,7 +1872,7 @@ function StudentDashboard({ token, profile }) {
                   if (ans.is_correct && ans.is_attempted) return null;
 
                   return (
-                    <div key={qNoStr} className="reattempt-card" style={{ borderLeft: reattemptDone ? '3px solid var(--success)' : '3px solid var(--danger)' }}>
+                    <div key={qNoStr} className="reattempt-card" style={{ borderLeft: (reattemptDone && reattemptDone.is_correct) ? '3px solid var(--success)' : '3px solid var(--danger)' }}>
                       <div className="reattempt-info">
                         <strong>Question {qNoStr}</strong>
                         <span className="badge" style={{ background: ans.is_attempted ? 'var(--danger-bg)' : 'var(--warning-bg)', color: ans.is_attempted ? 'var(--danger)' : 'var(--warning)' }}>
@@ -1855,17 +1880,27 @@ function StudentDashboard({ token, profile }) {
                         </span>
                       </div>
                       
-                      {reattemptDone ? (
+                      {reattemptDone && reattemptDone.is_correct ? (
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '4px', fontSize: '12px' }}>
-                          <p style={{ color: 'var(--success)' }}><strong>Reattempted:</strong> {reattemptDone.is_correct ? 'CORRECT now' : 'INCORRECT'}</p>
+                          <p style={{ color: 'var(--success)', fontWeight: 'bold' }}><strong>Reattempted:</strong> CORRECT now</p>
                           <p style={{ color: 'var(--text-muted)', marginTop: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                             Reason: {reattemptDone.reason}
                           </p>
                         </div>
                       ) : (
-                        <button className="btn btn-primary" onClick={() => openReattemptModal(parseInt(qNoStr))} style={{ padding: '8px', fontSize: '13px' }}>
-                          Unlock & Reattempt
-                        </button>
+                        <div>
+                          {reattemptDone && (
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '4px', fontSize: '12px', marginBottom: '10px' }}>
+                              <p style={{ color: 'var(--danger)', fontWeight: 'bold' }}><strong>Last Reattempt:</strong> INCORRECT</p>
+                              <p style={{ color: 'var(--text-muted)', marginTop: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                Reason: {reattemptDone.reason}
+                              </p>
+                            </div>
+                          )}
+                          <button className="btn btn-primary" onClick={() => openReattemptModal(parseInt(qNoStr))} style={{ padding: '8px', fontSize: '13px', width: '100%' }}>
+                            Unlock & Reattempt
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
