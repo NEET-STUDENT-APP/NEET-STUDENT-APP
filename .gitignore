@@ -1,0 +1,7 @@
+node_modules
+.env
+dist
+.firebase
+functions/node_modules
+functions/Exams
+*.log

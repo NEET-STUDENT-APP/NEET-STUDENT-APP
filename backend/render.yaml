@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: neet-student-app-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        value: gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com
+      - key: DB_PORT
+        value: 4000
+      - key: DB_USER
+        value: BN9g9KwP2SU7dzo.root
+      - key: DB_PASSWORD
+        value: zgPC6S0XPVFzn2zN
+      - key: DB_NAME
+        value: neet_db
+      - key: JWT_SECRET
+        value: NeetStudentAppSecretKey2026!@#
+      - key: IMGBB_API_KEY
+        value: 1a966379cb23b1ba6e42166f0a4ee38f
