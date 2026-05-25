@@ -1176,6 +1176,13 @@ function StudentDashboard({ token, profile }) {
     }
   }, [subTab]);
 
+  // Handle auto-submit when timer reaches 0
+  useEffect(() => {
+    if (isTestStarted && timeLeft === 0) {
+      handleAutoSubmit();
+    }
+  }, [timeLeft, isTestStarted]);
+
   // Start Exam
   const handleStartExam = async (exam) => {
     // Check if exam was already attempted
@@ -1215,7 +1222,6 @@ function StudentDashboard({ token, profile }) {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerIntervalRef.current);
-          handleAutoSubmit();
           return 0;
         }
         return prev - 1;
@@ -1374,7 +1380,8 @@ function StudentDashboard({ token, profile }) {
       showToast(`Submission successful! You scored ${data.score} / 720`, 'success');
       setIsTestStarted(false);
       setActiveExam(null);
-      setSubTab('reports'); // Switch to reports to see result
+      setSubTab('reports');
+      viewReportDetails(data.submissionId); // Immediately load and open the detailed report!
     } catch (e) {
       showToast(e.message, 'error');
     }

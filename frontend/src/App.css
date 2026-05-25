@@ -559,7 +559,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   padding: 24px;
-  overflow: hidden;
+  overflow-y: auto;
   background: #ffffff;
 }
 
@@ -573,7 +573,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 16px;
   border: 1px solid #cbd5e1;
   margin-bottom: 20px;
-  min-height: 300px;
+  min-height: 180px;
   overflow-y: auto;
 }
 
